@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ITMS - Intelligent Traffic Management System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* Login Screen */
+        .login-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 400px;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            margin-bottom: 30px;
+            color: #333;
+            font-size: 28px;
+        }
+
+        .role-selector {
+            margin-bottom: 20px;
+        }
+
+        .role-selector select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Main Dashboard */
+        .dashboard {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 80px);
+        }
+
+        .sidebar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+        }
+
+        .content-area {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 20px;
+        }
+
+        .alerts-panel {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+        }
+
+        .chart-container {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+            height: 500px;
+        }
+
+        .controls-panel {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+        }
+
+        /* Alert Styles */
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: alertPulse 0.5s ease-in;
+        }
+
+        @keyframes alertPulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .alert-critical {
+            background: #ff4757;
+            color: white;
+            border-left: 5px solid #ff3742;
+        }
+
+        .alert-warning {
+            background: #ffa726;
+            color: white;
+            border-left: 5px solid #ff9800;
+        }
+
+        .alert-normal {
+            background: #26de81;
+            color: white;
+            border-left: 5px solid #20bf6b;
+        }
+
+        .alert-info {
+            background: #3742fa;
+            color: white;
+            border-left: 5px solid #2f3542;
+        }
+
+        .train-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #007bff;
+        }
+
+        .train-status {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online { background: #26de81; }
+        .status-warning { background: #ffa726; }
+        .status-critical { background: #ff4757; }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        select, button {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .export-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+        }
+
+        .hidden { display: none; }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                order: 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .main-content {
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-box">
+            <h2>🚂 ITMS Login</h2>
+            <div class="role-selector">
+                <select id="userRole">
+                    <option value="">Select User Role</option>
+                    <option value="driver">Train Driver</option>
+                    <option value="control">Control Room</option>
+                    <option value="maintenance">Maintenance Team</option>
+                    <option value="management">Management</option>
+                </select>
+            </div>
+            <input type="text" id="username" placeholder="Username" value="demo">
+            <input type="password" id="password" placeholder="Password" value="password">
+            <button class="login-btn" onclick="login()">Login to Dashboard</button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <header class="header">
+            <div class="logo">
+                🚂 ITMS - Intelligent Traffic Management System
+            </div>
+            <div class="user-info">
+                <span id="currentUser">Welcome, User</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <h3>Active Trains</h3>
+                <div id="trainsList">
+                    <!-- Train cards will be populated here -->
+                </div>
+            </aside>
+
+            <main class="content-area">
+                <section class="alerts-panel">
+                    <h3>🚨 Live Alerts</h3>
+                    <div id="alertsContainer">
+                        <!-- Alerts will be populated here -->
+                    </div>
+                </section>
+
+                <section class="chart-container">
+                    <h3>Real-Time Track Monitoring</h3>
+                    <canvas id="trackChart"></canvas>
+                </section>
+
+                <section class="controls-panel">
+                    <div class="controls">
+                        <div class="control-group">
+                            <label>Time Range:</label>
+                            <select id="timeRange" onchange="updateTimeRange()">
+                                <option value="5">Last 5 minutes</option>
+                                <option value="15">Last 15 minutes</option>
+                                <option value="30">Last 30 minutes</option>
+                                <option value="60" selected>Last 1 hour</option>
+                                <option value="240">Last 4 hours</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>Selected Train:</label>
+                            <select id="trainFilter" onchange="updateTrainFilter()">
+                                <option value="all">All Trains</option>
+                            </select>
+                        </div>
+                        <button class="export-btn" onclick="exportData()">📊 Export Data</button>
+                        <button class="export-btn" onclick="generateReport()" style="background: #007bff;">📋 Generate Report</button>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let currentUserRole = '';
+        let chart;
+        let trains = [];
+        let alerts = [];
+        let currentData = [];
+
+        // Initialize trains data
+        const initializeTrains = () => {
+            trains = [
+                { id: 'T001', name: 'Express 12345', route: 'Delhi-Mumbai', speed: 120, status: 'normal', lastUpdate: new Date() },
+                { id: 'T002', name: 'Rajdhani 12301', route: 'Delhi-Kolkata', speed: 140, status: 'warning', lastUpdate: new Date() },
+                { id: 'T003', name: 'Shatabdi 12002', route: 'Delhi-Bhopal', speed: 160, status: 'normal', lastUpdate: new Date() },
+                { id: 'T004', name: 'Duronto 12259', route: 'Mumbai-Pune', speed: 95, status: 'critical', lastUpdate: new Date() },
+                { id: 'T005', name: 'Garib Rath 12512', route: 'Delhi-Bangalore', speed: 110, status: 'normal', lastUpdate: new Date() }
+            ];
+        };
+
+        // Login function
+        const login = () => {
+            const role = document.getElementById('userRole').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!role || !username || !password) {
+                alert('Please fill all fields and select a role');
+                return;
+            }
+
+            currentUserRole = role;
+            document.getElementById('currentUser').textContent = `Welcome, ${username} (${role.charAt(0).toUpperCase() + role.slice(1)})`;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            
+            initializeDashboard();
+        };
+
+        // Logout function
+        const logout = () => {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('userRole').value = '';
+            document.getElementById('username').value = 'demo';
+            document.getElementById('password').value = 'password';
+        };
+
+        // Initialize dashboard
+        const initializeDashboard = () => {
+            initializeTrains();
+            updateTrainsList();
+            initializeChart();
+            generateAlerts();
+            populateTrainFilter();
+            startRealTimeUpdates();
+        };
+
+        // Update trains list in sidebar
+        const updateTrainsList = () => {
+            const container = document.getElementById('trainsList');
+            container.innerHTML = '';
+
+            trains.forEach(train => {
+                const trainCard = document.createElement('div');
+                trainCard.className = 'train-card';
+                trainCard.innerHTML = `
+                    <div><strong>${train.name}</strong></div>
+                    <div style="font-size: 12px; color: #666;">${train.route}</div>
+                    <div class="train-status">
+                        <span><span class="status-indicator status-${train.status}"></span>${train.speed} km/h</span>
+                        <span style="font-size: 11px; color: #999;">${train.lastUpdate.toLocaleTimeString()}</span>
+                    </div>
+                `;
+                container.appendChild(trainCard);
+            });
+        };
+
+        // Initialize chart
+        const initializeChart = () => {
+            const ctx = document.getElementById('trackChart').getContext('2d');
+            
+            // Generate initial data
+            generateChartData();
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: currentData.labels,
+                    datasets: [
+                        {
+                            label: 'Track Geometry',
+                            data: currentData.trackGeometry,
+                            borderColor: '#3742fa',
+                            backgroundColor: 'rgba(55, 66, 250, 0.1)',
+                            tension: 0.4,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Rail Wear',
+                            data: currentData.railWear,
+                            borderColor: '#ff4757',
+                            backgroundColor: 'rgba(255, 71, 87, 0.1)',
+                            tension: 0.4,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Acceleration',
+                            data: currentData.acceleration,
+                            borderColor: '#26de81',
+                            backgroundColor: 'rgba(38, 222, 129, 0.1)',
+                            tension: 0.4,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Infringement',
+                            data: currentData.infringement,
+                            borderColor: '#ffa726',
+                            backgroundColor: 'rgba(255, 167, 38, 0.1)',
+                            tension: 0.4,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        };
+
+        // Generate chart data
+        const generateChartData = () => {
+            const timeRange = parseInt(document.getElementById('timeRange').value) || 60;
+            const points = 50;
+            const labels = [];
+            const now = new Date();
+
+            for (let i = points - 1; i >= 0; i--) {
+                const time = new Date(now - (i * (timeRange * 60 * 1000) / points));
+                labels.push(time.toLocaleTimeString());
+            }
+
+            currentData = {
+                labels: labels,
+                trackGeometry: generateDataPoints(points, 20, 80, 45),
+                railWear: generateDataPoints(points, 10, 90, 30),
+                acceleration: generateDataPoints(points, 15, 85, 50),
+                infringement: generateDataPoints(points, 5, 95, 25)
+            };
+        };
+
+        // Generate realistic data points
+        const generateDataPoints = (count, min, max, baseline) => {
+            const data = [];
+            let value = baseline;
+            
+            for (let i = 0; i < count; i++) {
+                value += (Math.random() - 0.5) * 10;
+                value = Math.max(min, Math.min(max, value));
+                
+                // Occasionally add spikes for critical conditions
+                if (Math.random() < 0.05) {
+                    value = Math.random() > 0.5 ? max - 5 : min + 5;
+                }
+                
+                data.push(Math.round(value * 100) / 100);
+            }
+            
+            return data;
+        };
+
+        // Generate alerts based on data
+        const generateAlerts = () => {
+            alerts = [];
+            
+            // Check latest data for alerts
+            const latest = {
+                trackGeometry: currentData.trackGeometry[currentData.trackGeometry.length - 1],
+                railWear: currentData.railWear[currentData.railWear.length - 1],
+                acceleration: currentData.acceleration[currentData.acceleration.length - 1],
+                infringement: currentData.infringement[currentData.infringement.length - 1]
+            };
+
+            // Generate alerts based on thresholds
+            if (latest.trackGeometry > 75) {
+                alerts.push({
+                    type: 'critical',
+                    message: `Critical Track Geometry Alert: ${latest.trackGeometry}% - Immediate Action Required`,
+                    train: 'T004',
+                    timestamp: new Date()
+                });
+            }
+
+            if (latest.railWear > 70) {
+                alerts.push({
+                    type: 'warning',
+                    message: `Rail Wear Warning: ${latest.railWear}% - Maintenance Scheduled`,
+                    train: 'T002',
+                    timestamp: new Date()
+                });
+            }
+
+            if (latest.acceleration > 65) {
+                alerts.push({
+                    type: 'warning',
+                    message: `High Acceleration Detected: ${latest.acceleration}% - Monitor Closely`,
+                    train: 'T001',
+                    timestamp: new Date()
+                });
+            }
+
+            if (latest.infringement < 30) {
+                alerts.push({
+                    type: 'normal',
+                    message: `All Systems Normal - Track Conditions Good`,
+                    train: 'All',
+                    timestamp: new Date()
+                });
+            }
+
+            updateAlertsDisplay();
+        };
+
+        // Update alerts display
+        const updateAlertsDisplay = () => {
+            const container = document.getElementById('alertsContainer');
+            container.innerHTML = '';
+
+            alerts.forEach(alert => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${alert.type}`;
+                alertDiv.innerHTML = `
+                    <div>
+                        <div><strong>${alert.message}</strong></div>
+                        <div style="font-size: 12px; opacity: 0.8;">Train: ${alert.train} | ${alert.timestamp.toLocaleTimeString()}</div>
+                    </div>
+                    <div>⚠️</div>
+                `;
+                container.appendChild(alertDiv);
+            });
+
+            // Highlight problem areas in chart
+            highlightProblems();
+        };
+
+        // Highlight problem areas in chart
+        const highlightProblems = () => {
+            if (chart && alerts.length > 0) {
+                const criticalAlerts = alerts.filter(a => a.type === 'critical');
+                if (criticalAlerts.length > 0) {
+                    // Add visual emphasis to the chart
+                    chart.options.plugins.annotation = {
+                        annotations: {
+                            box1: {
+                                type: 'box',
+                                xMin: currentData.labels.length - 5,
+                                xMax: currentData.labels.length - 1,
+                                backgroundColor: 'rgba(255, 71, 87, 0.2)',
+                                borderColor: '#ff4757',
+                                borderWidth: 1,
+                            }
+                        }
+                    };
+                    chart.update();
+                }
+            }
+        };
+
+        // Populate train filter dropdown
+        const populateTrainFilter = () => {
+            const select = document.getElementById('trainFilter');
+            select.innerHTML = '<option value="all">All Trains</option>';
+            
+            trains.forEach(train => {
+                const option = document.createElement('option');
+                option.value = train.id;
+                option.textContent = train.name;
+                select.appendChild(option);
+            });
+        };
+
+        // Update time range
+        const updateTimeRange = () => {
+            generateChartData();
+            chart.data.labels = currentData.labels;
+            chart.data.datasets[0].data = currentData.trackGeometry;
+            chart.data.datasets[1].data = currentData.railWear;
+            chart.data.datasets[2].data = currentData.acceleration;
+            chart.data.datasets[3].data = currentData.infringement;
+            chart.update();
+            generateAlerts();
+        };
+
+        // Update train filter
+        const updateTrainFilter = () => {
+            const selectedTrain = document.getElementById('trainFilter').value;
+            // In a real app, this would filter the data by train
+            console.log('Filtering data for train:', selectedTrain);
+        };
+
+        // Export data
+        const exportData = () => {
+            const data = {
+                timestamp: new Date().toISOString(),
+                trains: trains,
+                alerts: alerts,
+                chartData: currentData,
+                userRole: currentUserRole
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `ITMS_Data_${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            alert('Data exported successfully!');
+        };
+
+        // Generate report
+        const generateReport = () => {
+            const reportData = {
+                title: 'ITMS Daily Report',
+                date: new Date().toLocaleDateString(),
+                summary: {
+                    totalTrains: trains.length,
+                    criticalAlerts: alerts.filter(a => a.type === 'critical').length,
+                    warningAlerts: alerts.filter(a => a.type === 'warning').length,
+                    normalStatus: trains.filter(t => t.status === 'normal').length
+                },
+                compliance: 'RDSO Specification TM/IM/448, Rev. 1: 2023 and EN 13848',
+                trains: trains,
+                alerts: alerts
+            };
+            
+            const reportStr = `
+ITMS - Intelligent Traffic Management System
+Daily Report - ${reportData.date}
+
+COMPLIANCE: ${reportData.compliance}
+
+SUMMARY:
+- Total Active Trains: ${reportData.summary.totalTrains}
+- Critical Alerts: ${reportData.summary.criticalAlerts}
+- Warning Alerts: ${reportData.summary.warningAlerts}
+- Trains with Normal Status: ${reportData.summary.normalStatus}
+
+TRAIN STATUS:
+${trains.map(t => `${t.name} (${t.id}): ${t.status.toUpperCase()} - ${t.speed} km/h`).join('\n')}
+
+ACTIVE ALERTS:
+${alerts.map(a => `${a.type.toUpperCase()}: ${a.message} (${a.timestamp.toLocaleString()})`).join('\n')}
+
+Generated by: ${currentUserRole.toUpperCase()} user
+Report Time: ${new Date().toLocaleString()}
+            `;
+            
+            const dataUri = 'data:text/plain;charset=utf-8,'+ encodeURIComponent(reportStr);
+            const exportFileDefaultName = `ITMS_Report_${new Date().toISOString().split('T')[0]}.txt`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            alert('Report generated successfully!');
+        };
+
+        // Start real-time updates
+        const startRealTimeUpdates = () => {
+            setInterval(() => {
+                // Simulate real-time data updates
+                const now = new Date();
+                
+                // Update train data
+                trains.forEach(train => {
+                    train.lastUpdate = now;
+                    train.speed += (Math.random() - 0.5) * 10;
+                    train.speed = Math.max(50, Math.min(180, train.speed));
+                    
+                    // Randomly change status
+                    if (Math.random() < 0.05) {
+                        const statuses = ['normal', 'warning', 'critical'];
+                        train.status = statuses[Math.floor(Math.random() * statuses.length)];
+                    }
+                });
+                
+                // Add new data point to chart
+                const newLabel = now.toLocaleTimeString();
+                currentData.labels.push(newLabel);
+                currentData.labels.shift();
+                
+                currentData.trackGeometry.push(generateDataPoints(1, 20, 80, currentData.trackGeometry[currentData.trackGeometry.length - 1])[0]);
+                currentData.trackGeometry.shift();
+                
+                currentData.railWear.push(generateDataPoints(1, 10, 90, currentData.railWear[currentData.railWear.length - 1])[0]);
+                currentData.railWear.shift();
+                
+                currentData.acceleration.push(generateDataPoints(1, 15, 85, currentData.acceleration[currentData.acceleration.length - 1])[0]);
+                currentData.acceleration.shift();
+                
+                currentData.infringement.push(generateDataPoints(1, 5, 95, currentData.infringement[currentData.infringement.length - 1])[0]);
+                currentData.infringement.shift();
+                
+                // Update chart
+                chart.data.labels = currentData.labels;
+                chart.data.datasets[0].data = currentData.trackGeometry;
+                chart.data.datasets[1].data = currentData.railWear;
+                chart.data.datasets[2].data = currentData.acceleration;
+                chart.data.datasets[3].data = currentData.infringement;
+                chart.update('none');
+                
+                // Update displays
+                updateTrainsList();
+                generateAlerts();
+                
+            }, 3000); // Update every 3 seconds
+        };
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default login values for demo
+            document.getElementById('username').value = 'demo';
+            document.getElementById('password').value = 'password';
+        });
+    </script>
+</body>
+</html>
